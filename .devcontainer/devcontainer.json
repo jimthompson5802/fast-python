@@ -1,0 +1,33 @@
+{
+    "name": "Python 3.10",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".",
+        "args": { 
+            "VARIANT": "3.10"
+        }
+    },
+    "runArgs": [
+        "-u",
+        "vscode",
+        "--cap-add=SYS_PTRACE",
+        "--security-opt",
+        "seccomp=unconfined"
+    ],
+    "settings": { 
+        "terminal.integrated.shell.linux": "/bin/bash"
+    },
+    "extensions": [
+		"ms-python.python",
+		"ms-python.anaconda-extension-pack",
+		"donjayamanne.git-extension-pack",
+		"GitHub.copilot",
+		"GitHub.copilot-chat",
+		"VisualStudioExptTeam.vscodeintellicode",
+		"ms-toolsai.jupyter",
+		"ms-toolsai.vscode-jupyter-cell-tags",
+		"ms-python.vscode-pylance"
+	],
+    "forwardPorts": [],
+    // "postCreateCommand": "pip install -r requirements.txt"
+}
