@@ -1,6 +1,11 @@
+# cython: language_level=3
+
+import cython
+
 import numpy as np
 cimport numpy as np
 
+@cython.boundscheck(False)
 def _ple_transform_cython(np.ndarray[np.float64_t, ndim=1] column_data, np.ndarray[np.float64_t, ndim=1] column_bin_boundaries, int num_bins):
     cdef np.ndarray[np.float64_t, ndim=2] encoded_data = np.ones((column_data.shape[0], num_bins))
     cdef np.ndarray[np.int64_t, ndim=1] bin_indices = np.digitize(column_data, column_bin_boundaries) - 1
