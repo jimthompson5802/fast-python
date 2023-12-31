@@ -1,0 +1,3 @@
+# cython generated files
+*.c
+*.html
