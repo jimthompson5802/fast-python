@@ -78,7 +78,7 @@ def _ple_transform(column_data, column_bin_boundaries, num_bins):
 # _ple_transform = jit_wrapper(_ple_transform)
 
 # force compilation of the function
-_ple_transform(np.array([1., 2., 3.]), np.array([0.25, 0.5, 0.75, 1.0]), 3)
+# _ple_transform(np.array([1., 2., 3.]), np.array([0.25, 0.5, 0.75, 1.0]), 3)
 
 
 class MyTransformer1(BaseEstimator, TransformerMixin):
