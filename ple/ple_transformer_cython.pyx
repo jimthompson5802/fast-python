@@ -22,7 +22,7 @@ def _ple_transform_cython(np.ndarray[np.float64_t, ndim=1] column_data, np.ndarr
     cdef np.ndarray[np.float64_t, ndim=1] encoded_values = bin_numerator / bin_denominator
     cdef np.ndarray[np.uint8_t, ndim=2] mask = np.zeros((encoded_data.shape[0], encoded_data.shape[1]), dtype=np.bool_)
 
-    for i in range(encoded_data.shape[0]):
+    for i in range(num_rows):
         mask[i, bin_indices[i]] = True
     cdef np.ndarray[np.int64_t, ndim=1] rows, cols
 
