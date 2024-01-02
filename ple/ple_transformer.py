@@ -81,7 +81,7 @@ def _ple_transform(column_data, column_bin_boundaries, num_bins):
 # _ple_transform(np.array([1., 2., 3.]), np.array([0.25, 0.5, 0.75, 1.0]), 3)
 
 
-class MyTransformer1(BaseEstimator, TransformerMixin):
+class MyTransformerNP(BaseEstimator, TransformerMixin):
     EPSILON = 1e-8
 
     def __init__(self, num_bins=4):
@@ -157,9 +157,9 @@ class MyTransformer1(BaseEstimator, TransformerMixin):
             encode_data_list.append(encoded_data)
 
         # stach the encoded data encoded_data into a matrix that contains the piecewise linear encoding for each column
-        return np.array(encode_data_list).transpose(1, 0, 2)
+        return np.array(encode_data_list).astype(np.float32).transpose(1, 0, 2)
 
-class MyTransformer2(BaseEstimator, TransformerMixin):
+class MyTransformerNumba(BaseEstimator, TransformerMixin):
     EPSILON = 1e-8
 
     def __init__(self, num_bins=4):
@@ -194,10 +194,10 @@ class MyTransformer2(BaseEstimator, TransformerMixin):
                 _ple_transform(column_data, column_bin_boundaries, self.num_bins)
             )
 
-        return np.array(encoded_data_list).transpose(1, 0, 2)
+        return np.array(encoded_data_list).astype(np.float32).transpose(1, 0, 2)
     
 
-class MyTransformer3(BaseEstimator, TransformerMixin):
+class MyTransformerCython(BaseEstimator, TransformerMixin):
     EPSILON = 1e-8
 
     def __init__(self, num_bins=4):
@@ -224,10 +224,11 @@ class MyTransformer3(BaseEstimator, TransformerMixin):
 
         # interate over the columns and perform piecewise linear encoding
         for f_n in self.feature_names:
-            column_data = X[f_n].values
-            column_bin_boundaries = np.array(self.bin_boundaries[f_n])
+            column_data = X[f_n].values.astype(np.float32)
+            column_bin_boundaries = np.array(self.bin_boundaries[f_n]).astype(np.float32)
             # print(f"column_data {column_data.shape} column_bin_boundaries {column_bin_boundaries.shape}")
             # print(f"column_data {type(column_data)} column_bin_boundaries {type(column_bin_boundaries)}")
+            # print(f"column_data {column_data.dtype} column_bin_boundaries {column_bin_boundaries}")
             encoded_data_list.append(
                 _ple_transform_cython(column_data, column_bin_boundaries, self.num_bins)
             )
@@ -239,53 +240,69 @@ class MyTransformer3(BaseEstimator, TransformerMixin):
 
 if __name__ == "__main__":
     NUM_FEATURES = 100
+    NUM_BINS = 45
+    NUM_SAMPLES = 1_000  #1_000
     # Generate synthetic regression data
-    X, y = make_regression(n_samples=50000, n_features=NUM_FEATURES, noise=0.1)
+    X, y = make_regression(n_samples=NUM_SAMPLES, n_features=NUM_FEATURES, noise=0.1, random_state=1)
 
     # Convert to pandas DataFrame
     df = pd.DataFrame(data=X, columns=[f'Feature_{i}' for i in range(1, NUM_FEATURES+1)])
     df['Target'] = y
 
-    df_data = df.drop('Target', axis=1)
+    df_data = df.drop('Target', axis=1).astype(np.float32)
 
     print(df_data.head())
 
 
-    # Create an instance of the transformer
-    transformer = MyTransformer1(num_bins=75)
+    # Create an instance of the Numpy transformer
+    transformer = MyTransformerNP(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
     transformer.fit(df_data)
 
     # Transform the data
     start_time = time.time()
-    encoded_data = transformer.transform(df_data)
+    encoded_data_np = transformer.transform(df_data)
     end_time = time.time()
-    print(f"Transforming {df_data.shape} took {end_time - start_time} seconds")
-    print(f"encoded data shape {encoded_data.shape}")
+    print(f"TransformingNP {df_data.shape} took {end_time - start_time} seconds")
+    print(f"encoded NP shape {encoded_data_np.shape} {encoded_data_np.dtype}")
 
-    # Create an instance of the transformer
-    transformer = MyTransformer2(num_bins=75)
+    # Create an instance of the Numba transformer
+    transformer = MyTransformerNumba(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
     transformer.fit(df_data)
 
     # Transform the data
     start_time = time.time()
-    encoded_data = transformer.transform(df_data)
+    encoded_data_numba = transformer.transform(df_data)
     end_time = time.time()
-    print(f"Transforming2 {df_data.shape} took {end_time - start_time} seconds")
-    print(f"encoded data2 shape {encoded_data.shape}")
+    print(f"TransformingNumba {df_data.shape} took {end_time - start_time} seconds")
+    print(f"encoded numba shape {encoded_data_numba.shape} {encoded_data_numba.dtype}")
 
-    # # Create an instance of the transformer
-    # transformer3 = MyTransformer(num_bins=75)
+    # Create an instance of the Cython transformer
+    transformer = MyTransformerCython(num_bins=NUM_BINS)
 
-    # # Fit the transformer to the data
-    # transformer3.fit(df_data)
+    # Fit the transformer to the data
+    transformer.fit(df_data)
 
-    # # Transform the data
-    # start_time = time.time()
-    # encoded_data3 = transformer3.transform(df_data)
-    # end_time = time.time()
-    # print(f"Transforming3 {df_data.shape} took {end_time - start_time} seconds")
-    # print(f"encoded data3 shape {encoded_data3.shape}")
+    # Transform the data
+    start_time = time.time()
+    encoded_data_cython = transformer.transform(df_data)
+    end_time = time.time()
+    print(f"TransformingCython {df_data.shape} took {end_time - start_time} seconds")
+    print(f"encoded cython shape {encoded_data_cython.shape} {encoded_data_cython.dtype}")
+
+    print(f"np.allclose(encoded_data_np, encoded_data_numba) {np.allclose(encoded_data_np, encoded_data_numba)}")
+    print(f"np.allclose(encoded_data_np, encoded_data_cython) {np.allclose(encoded_data_np, encoded_data_cython)}")
+
+    if not np.allclose(encoded_data_np, encoded_data_cython):
+        # print("encoded_data_np != encoded_data_cython")
+        # print(f"np.where(encoded_data_np != encoded_data_cython) {np.where(encoded_data_np != encoded_data_cython)}")
+        # print(f"encoded_data_np[np.where(encoded_data_np != encoded_data_cython)]\n{encoded_data_np[np.where(encoded_data_np != encoded_data_cython)]}")
+        # print(f"encoded_data_cython[np.where(encoded_data_np != encoded_data_cython)]\n{encoded_data_cython[np.where(encoded_data_np != encoded_data_cython)]}")
+        # rows, feats, bins = np.where(encoded_data_np != encoded_data_cython)
+        # for row, feat, bin in zip(rows, feats, bins):
+        #     print(f"row {row} feat {feat} encoded_data_np[row, feat, bin] {encoded_data_np[row, feat, bin]} encoded_data_cython[row, feat, bin] {encoded_data_cython[row, feat, bin]}, abs diff {np.abs(encoded_data_np[row, feat, bin] - encoded_data_cython[row, feat, bin])}")
+
+        print(f"max diff {np.max(np.abs(encoded_data_np - encoded_data_cython))}")
