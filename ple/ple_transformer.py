@@ -1,4 +1,5 @@
 
+from abc import abstractmethod
 import functools
 import time
 import numpy as np
@@ -26,8 +27,7 @@ from ple_transformer_cython import _ple_transform_cython
 # force compilation of the function
 # _ple_transform(np.array([1., 2., 3.]), np.array([0.25, 0.5, 0.75, 1.0]), 3)
 
-
-class MyTransformerNP(BaseEstimator, TransformerMixin):
+class MyTransformerBase(BaseEstimator, TransformerMixin):
     EPSILON = 1e-8
 
     def __init__(self, num_bins=4):
@@ -48,6 +48,13 @@ class MyTransformerNP(BaseEstimator, TransformerMixin):
             self.bin_boundaries[feature_name] = boundaries  # Add the bin boundaries to the list
 
         return self
+    
+    @abstractmethod
+    def transform(self, X):
+        raise NotImplementedError("transform method requires implementation")
+        
+class MyTransformerNP(MyTransformerBase):
+    EPSILON = 1e-8
     
     def transform(self, X):
         # Transform the data using the fitted transformer
@@ -105,27 +112,7 @@ class MyTransformerNP(BaseEstimator, TransformerMixin):
         # stach the encoded data encoded_data into a matrix that contains the piecewise linear encoding for each column
         return np.array(encode_data_list).astype(np.float32).transpose(1, 0, 2)
 
-class MyTransformerNumba(BaseEstimator, TransformerMixin):
-    EPSILON = 1e-8
-
-    def __init__(self, num_bins=4):
-        self.num_bins = num_bins    # Store the number of bins
-        self.bin_boundaries = {}  # Initialize the bin boundaries
-
-    def fit(self, X, y=None):
-        # Fit the transformer to the data
- 
-        # Initialize an empty list to store the bin boundaries for each column
-        quantiles = np.linspace(0, 1, self.num_bins + 1)
-        self.feature_names = X.columns
-
-        # Loop through each column and compute the bin boundaries
-        for feature_name in self.feature_names:  # Iterate over columns
-            column_data = X[feature_name]  # Extract the current column
-            boundaries = column_data.quantile(quantiles) # Compute the bin boundaries for the current column
-            self.bin_boundaries[feature_name] = boundaries  # Add the bin boundaries to the list
-
-        return self
+class MyTransformerNumba(MyTransformerBase):
 
     @staticmethod
     @nb.njit  #('float32[:,:](float64[:], float64[:], int32)')
@@ -199,28 +186,8 @@ class MyTransformerNumba(BaseEstimator, TransformerMixin):
         return np.array(encoded_data_list).astype(np.float32).transpose(1, 0, 2)
     
 
-class MyTransformerCython(BaseEstimator, TransformerMixin):
-    EPSILON = 1e-8
-
-    def __init__(self, num_bins=4):
-        self.num_bins = num_bins    # Store the number of bins
-        self.bin_boundaries = {}  # Initialize the bin boundaries
-
-    def fit(self, X, y=None):
-        # Fit the transformer to the data
- 
-        # Initialize an empty list to store the bin boundaries for each column
-        quantiles = np.linspace(0, 1, self.num_bins + 1)
-        self.feature_names = X.columns
-
-        # Loop through each column and compute the bin boundaries
-        for feature_name in self.feature_names:  # Iterate over columns
-            column_data = X[feature_name]  # Extract the current column
-            boundaries = column_data.quantile(quantiles) # Compute the bin boundaries for the current column
-            self.bin_boundaries[feature_name] = boundaries  # Add the bin boundaries to the list
-
-        return self
-
+class MyTransformerCython(MyTransformerBase):
+    
     def transform(self, X):
         encoded_data_list = []
 
@@ -293,7 +260,7 @@ if __name__ == "__main__":
     print(f"\nTransformCython {df_data.shape} took {end_time - start_time} seconds")
     print(f"encoded shape {encoded_data_cython.shape} {encoded_data_cython.dtype}")
 
-    print(f"np.allclose(encoded_data_np, encoded_data_numba) {np.allclose(encoded_data_np, encoded_data_numba)}")
+    print(f"\nnp.allclose(encoded_data_np, encoded_data_numba) {np.allclose(encoded_data_np, encoded_data_numba)}")
     print(f"np.allclose(encoded_data_np, encoded_data_cython) {np.allclose(encoded_data_np, encoded_data_cython)}")
 
     if not np.allclose(encoded_data_np, encoded_data_cython):
