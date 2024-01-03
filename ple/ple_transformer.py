@@ -27,7 +27,7 @@ from ple_transformer_cython import _ple_transform_cython
 # force compilation of the function
 # _ple_transform(np.array([1., 2., 3.]), np.array([0.25, 0.5, 0.75, 1.0]), 3)
 
-class MyTransformerBase(BaseEstimator, TransformerMixin):
+class PiecewiseLinearEncoderBase(BaseEstimator, TransformerMixin):
     EPSILON = 1e-8
 
     def __init__(self, num_bins=4):
@@ -53,7 +53,7 @@ class MyTransformerBase(BaseEstimator, TransformerMixin):
     def transform(self, X):
         raise NotImplementedError("transform method requires implementation")
         
-class MyTransformerNP(MyTransformerBase):
+class PiecewiseLinearEncoderNP(PiecewiseLinearEncoderBase):
     EPSILON = 1e-8
     
     def transform(self, X):
@@ -112,7 +112,7 @@ class MyTransformerNP(MyTransformerBase):
         # stach the encoded data encoded_data into a matrix that contains the piecewise linear encoding for each column
         return np.array(encode_data_list).astype(np.float32).transpose(1, 0, 2)
 
-class MyTransformerNumba(MyTransformerBase):
+class PiecewiseLinearEncoderNumba(PiecewiseLinearEncoderBase):
 
     @staticmethod
     @nb.njit  #('float32[:,:](float64[:], float64[:], int32)')
@@ -186,7 +186,7 @@ class MyTransformerNumba(MyTransformerBase):
         return np.array(encoded_data_list).astype(np.float32).transpose(1, 0, 2)
     
 
-class MyTransformerCython(MyTransformerBase):
+class PiecewiseLinearEncoderCython(PiecewiseLinearEncoderBase):
     
     def transform(self, X):
         encoded_data_list = []
@@ -222,7 +222,7 @@ if __name__ == "__main__":
 
 
     # Create an instance of the Numpy transformer
-    transformer = MyTransformerNP(num_bins=NUM_BINS)
+    transformer = PiecewiseLinearEncoderNP(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
     transformer.fit(df_data)
@@ -235,7 +235,7 @@ if __name__ == "__main__":
     print(f"encoded shape {encoded_data_np.shape} {encoded_data_np.dtype}")
 
     # Create an instance of the Numba transformer
-    transformer = MyTransformerNumba(num_bins=NUM_BINS)
+    transformer = PiecewiseLinearEncoderNumba(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
     transformer.fit(df_data)
@@ -248,7 +248,7 @@ if __name__ == "__main__":
     print(f"encoded shape {encoded_data_numba.shape} {encoded_data_numba.dtype}")
 
     # Create an instance of the Cython transformer
-    transformer = MyTransformerCython(num_bins=NUM_BINS)
+    transformer = PiecewiseLinearEncoderCython(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
     transformer.fit(df_data)
