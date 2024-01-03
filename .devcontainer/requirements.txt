@@ -7,3 +7,4 @@ scikit-learn
 ipykernel
 matplotlib
 seaborn
+taichi
