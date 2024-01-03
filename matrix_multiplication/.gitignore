@@ -1,0 +1,20 @@
+# generated object and libarary files
+*.o
+*.so
+*.c
+*.cpp
+__pycache__/
+
+# generated output
+*.html
+
+# main executable
+matrix_test_pgm
+prototypes/main
+matrix_multiplication_native
+
+# generate plots
+*.png
+
+# exceptions
+!matrix_multiplication_native.c
