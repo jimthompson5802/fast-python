@@ -25,7 +25,10 @@ cpdef np.ndarray[np.float32_t, ndim=2] _ple_transform_cython(np.ndarray[np.float
     cdef np.ndarray[np.float32_t, ndim=1] bin_min = column_bin_boundaries[bin_indices].astype(np.float32)
 
     # Handle edge case where bin index equals the number of bins
-    bin_min[bin_indices == num_bins] = column_bin_boundaries[num_bins - 1]
+    # bin_min[bin_indices == num_bins] = column_bin_boundaries[num_bins - 1]
+    for i in range(num_rows):
+        if bin_indices[i] == num_bins:
+            bin_min[i] = column_bin_boundaries[num_bins - 1]
 
     # Compute the numerator for each data point as the difference between the data point and its corresponding bin_min
     cdef np.ndarray[np.float32_t, ndim=1] bin_numerator = column_data - bin_min
