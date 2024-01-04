@@ -22,13 +22,10 @@ cpdef np.ndarray[np.float32_t, ndim=2] _ple_transform_cython(np.ndarray[np.float
     cdef np.ndarray[np.int64_t, ndim=1] bin_indices = np.digitize(column_data, column_bin_boundaries) - 1
 
     # Compute the minimum value of each bin
-    cdef np.ndarray[np.float32_t, ndim=1] bin_min = column_bin_boundaries[bin_indices].astype(np.float32)
+    cdef np.ndarray[np.float32_t, ndim=1] bin_min = column_bin_boundaries[bin_indices]
 
     # Handle edge case where bin index equals the number of bins
-    # bin_min[bin_indices == num_bins] = column_bin_boundaries[num_bins - 1]
-    for i in range(num_rows):
-        if bin_indices[i] == num_bins:
-            bin_min[i] = column_bin_boundaries[num_bins - 1]
+    bin_min[bin_indices == num_bins] = column_bin_boundaries[num_bins - 1]
 
     # Compute the numerator for each data point as the difference between the data point and its corresponding bin_min
     cdef np.ndarray[np.float32_t, ndim=1] bin_numerator = column_data - bin_min
@@ -40,10 +37,7 @@ cpdef np.ndarray[np.float32_t, ndim=2] _ple_transform_cython(np.ndarray[np.float
     cdef np.ndarray[np.int64_t, ndim=1] idxs = bin_indices
 
     # Adjust for edge case where bin index equals the number of bins
-    # idxs[idxs == num_bins] = num_bins - 1
-    for i in range(num_rows):
-        if idxs[i] == num_bins:
-            idxs[i] = num_bins - 1
+    idxs[idxs == num_bins] = num_bins - 1
 
     # Compute the denominator for each data point as the corresponding bin width
     cdef np.ndarray[np.float32_t, ndim=1] bin_denominator = bin_widths[idxs]
