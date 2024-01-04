@@ -271,5 +271,9 @@ if __name__ == "__main__":
         # rows, feats, bins = np.where(encoded_data_np != encoded_data_cython)
         # for row, feat, bin in zip(rows, feats, bins):
         #     print(f"row {row} feat {feat} encoded_data_np[row, feat, bin] {encoded_data_np[row, feat, bin]} encoded_data_cython[row, feat, bin] {encoded_data_cython[row, feat, bin]}, abs diff {np.abs(encoded_data_np[row, feat, bin] - encoded_data_cython[row, feat, bin])}")
+        equality_mask = np.isclose(encoded_data_np, encoded_data_cython)
+        number_true = np.sum(equality_mask)
+        number_false = np.sum(~equality_mask)
 
-        print(f"max diff {np.max(np.abs(encoded_data_np - encoded_data_cython))}")
+        abs_dff = np.abs(encoded_data_np - encoded_data_cython)
+        print(f"max diff {np.max(abs_dff)}, number false {number_false:,d}, percent false {number_false / (number_true + number_false) * 100:0.2f}% out of {number_true + number_false:,d} total")
