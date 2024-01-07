@@ -1,4 +1,9 @@
 # cython generated files
 *.c
 *.html
+
+# plot files
 *.png
+
+# data files
+*.csv
