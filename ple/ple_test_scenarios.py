@@ -33,7 +33,10 @@ def test_transformer(TransformerToTest, df, num_bins=45):
     # enable garbage collection again
     gc.enable()
 
-    return {"transformer": TransformerToTest.__name__, "num_samples": len(df), "fit_duration": fit_duration, "transform_duration": transform_duration}
+    transformer_name = TransformerToTest.__name__
+    short_name = transformer_name.replace("PiecewiseLinearEncoder", "")
+
+    return {"transformer": short_name, "num_samples": len(df), "fit_duration": fit_duration, "transform_duration": transform_duration}
 
 
 if __name__ == "__main__":
