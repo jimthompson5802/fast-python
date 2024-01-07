@@ -3,6 +3,7 @@
 rm test_results.csv
 
 # array for values 1000, 10000
+# declare -a num_samples=("1000")
 declare -a num_samples=("1000" "10000" "100000" "1000000")
 
 # array of transformer names
