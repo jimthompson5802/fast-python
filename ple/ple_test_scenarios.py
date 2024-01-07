@@ -59,6 +59,7 @@ if __name__ == "__main__":
 
     # Now you can access the arguments as args.num and args.test_results_file
     print(args.num_samples)
+    print(args.num_features)
     print(args.test_results_fp)
     print(args.transformer_class)
     test_results_fp = args.test_results_fp
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     X, y = make_regression(n_samples=args.num_samples, n_features=args.num_features, noise=0.1, random_state=1)
 
     # Convert to pandas DataFrame
-    df = pd.DataFrame(data=X, columns=[f'Feature_{i}' for i in range(1, NUM_FEATURES+1)])
+    df = pd.DataFrame(data=X, columns=[f'Feature_{i}' for i in range(1, args.num_features+1)])
     df['Target'] = y
 
     df_data = df.drop('Target', axis=1).astype('float32')
