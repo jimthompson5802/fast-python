@@ -53,7 +53,7 @@ class PiecewiseLinearEncoderBase(BaseEstimator, TransformerMixin):
     def transform(self, X):
         raise NotImplementedError("transform method requires implementation")
         
-class PiecewiseLinearEncoderNP(PiecewiseLinearEncoderBase):
+class PiecewiseLinearEncoderNumpy(PiecewiseLinearEncoderBase):
     EPSILON = 1e-8
     
     def transform(self, X):

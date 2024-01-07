@@ -4,10 +4,10 @@ rm test_results.csv
 
 # array for values 1000, 10000
 # declare -a num_samples=("1000")
-declare -a num_samples=("1000" "10000" "100000" "1000000")
+declare -a num_samples=("100000" "200000" "400000" "800000" )
 
 # array of transformer names
-declare -a transformers=("PiecewiseLinearEncoderNP" "PiecewiseLinearEncoderNumbaV0" "PiecewiseLinearEncoderNumbaV1" "PiecewiseLinearEncoderCython")
+declare -a transformers=("PiecewiseLinearEncoderNumpy" "PiecewiseLinearEncoderNumbaV0" "PiecewiseLinearEncoderNumbaV1" "PiecewiseLinearEncoderCython")
 
 # loop through the array of values
 for i in "${num_samples[@]}"
