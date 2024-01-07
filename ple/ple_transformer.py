@@ -112,11 +112,11 @@ class PiecewiseLinearEncoderNP(PiecewiseLinearEncoderBase):
         # stach the encoded data encoded_data into a matrix that contains the piecewise linear encoding for each column
         return np.array(encode_data_list).astype(np.float32).transpose(1, 0, 2)
 
-class PiecewiseLinearEncoderNumba(PiecewiseLinearEncoderBase):
+class PiecewiseLinearEncoderNumbaV0(PiecewiseLinearEncoderBase):
 
     @staticmethod
     @nb.njit  #('float32[:,:](float64[:], float64[:], int32)')
-    def _ple_transform(column_data, column_bin_boundaries, num_bins):
+    def _ple_transformv0(column_data, column_bin_boundaries, num_bins):
         # print("ple_transform column_data", column_data.shape, "column_bin_boundaries", column_bin_boundaries.shape, "num_bins",num_bins)
         # print("ple_transform column_data", column_data[:5], "column_bin_boundaries", column_bin_boundaries[:5])
         # Initialize a matrix of all ones to store the encoded data
@@ -180,11 +180,92 @@ class PiecewiseLinearEncoderNumba(PiecewiseLinearEncoderBase):
             # print(f"column_data {column_data.shape} column_bin_boundaries {column_bin_boundaries.shape}")
             # print(f"column_data {type(column_data)} column_bin_boundaries {type(column_bin_boundaries)}")
             encoded_data_list.append(
-                self._ple_transform(column_data, column_bin_boundaries, self.num_bins)
+                self._ple_transformv0(column_data, column_bin_boundaries, self.num_bins)
             )
 
         return np.array(encoded_data_list).astype(np.float32).transpose(1, 0, 2)
-    
+
+class PiecewiseLinearEncoderNumbaV1(PiecewiseLinearEncoderBase):
+
+    def fit(self, X, y=None):
+        super().fit(X, y)
+
+        # force compilation of the function
+        self.transform(X[:1])
+
+        return self
+
+    @staticmethod
+    @nb.njit  #('float32[:,:](float64[:], float64[:], int32)')
+    def _ple_transformv1(column_data, column_bin_boundaries, num_bins):
+        # print("ple_transform column_data", column_data.shape, "column_bin_boundaries", column_bin_boundaries.shape, "num_bins",num_bins)
+        # print("ple_transform column_data", column_data[:5], "column_bin_boundaries", column_bin_boundaries[:5])
+        # Initialize a matrix of all ones to store the encoded data
+        encoded_data = np.ones((column_data.shape[0], num_bins))
+        
+        # Use np.digitize to find the bin indices for each data point
+        bin_indices = np.digitize(column_data, column_bin_boundaries) - 1
+
+        # compute numerator, adjust for edge case at max value
+        # find the bin min for each data point
+        bin_min = column_bin_boundaries[bin_indices]
+
+        # for maximum data point, set bin min to second to last bin boundary
+        bin_min[bin_indices == num_bins] = column_bin_boundaries[-2]
+
+        # compute the numerator for each data point, x - bin[i-1]
+        bin_numerator = column_data - bin_min
+        
+        # Calculate the bin widths based on the bin boundaries
+        bin_widths = np.diff(column_bin_boundaries)
+
+        # adjust for edge case of last bin
+        # for maximum data point, set bin width to last bin boundary
+        idxs = bin_indices
+        idxs[idxs == num_bins] = num_bins - 1
+
+        # compute the demoninator for each data point: bin[i] - bin[i-1]
+        bin_denominator = bin_widths[idxs]
+
+        # Calculate the encoded value of each data point within the selected bin
+        encoded_values = bin_numerator / bin_denominator
+
+        # Create a mask to store the encoded value in the corresponding column of encoded_data
+        mask = np.zeros(encoded_data.shape, dtype=np.bool_)
+        # mask[np.arange(encoded_data.shape[0]), bin_indices] = True
+        for i in range(encoded_data.shape[0]):
+            mask[i, bin_indices[i]] = True
+
+        # Store the encoded value in the corresponding column of encoded_data
+        # encoded_data[mask] = encoded_values
+        rows, cols = np.where(mask)
+        for row, col in zip(rows, cols):
+            encoded_data[row, col] = encoded_values[row]
+            for i in range(col + 1, encoded_data.shape[1]):
+                encoded_data[row, i] = 0
+
+        # # Create mask to set all values after the column-specific bin index to 0
+        # mask = np.tile(np.arange(encoded_data.shape[1]), (encoded_data.shape[0], 1))
+        # mask = mask > bin_indices.reshape(-1, 1)
+        # encoded_data[mask] = 0
+
+        return encoded_data
+
+    def transform(self, X):
+        encoded_data_list = []
+
+        # interate over the columns and perform piecewise linear encoding
+        for f_n in self.feature_names:
+            column_data = X[f_n].values
+            column_bin_boundaries = np.array(self.bin_boundaries[f_n])
+            # print(f"column_data {column_data.shape} column_bin_boundaries {column_bin_boundaries.shape}")
+            # print(f"column_data {type(column_data)} column_bin_boundaries {type(column_bin_boundaries)}")
+            encoded_data_list.append(
+                self._ple_transformv1(column_data, column_bin_boundaries, self.num_bins)
+            )
+
+        return np.array(encoded_data_list).astype(np.float32).transpose(1, 0, 2)
+
 
 class PiecewiseLinearEncoderCython(PiecewiseLinearEncoderBase):
     
@@ -222,45 +303,59 @@ if __name__ == "__main__":
 
 
     # Create an instance of the Numpy transformer
-    transformer = PiecewiseLinearEncoderNP(num_bins=NUM_BINS)
+    transformernp = PiecewiseLinearEncoderNP(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
-    transformer.fit(df_data)
+    transformernp.fit(df_data)
 
     # Transform the data
     start_time = time.time()
-    encoded_data_np = transformer.transform(df_data)
+    encoded_data_np = transformernp.transform(df_data)
     end_time = time.time()
     print(f"TransformNP {df_data.shape} took {end_time - start_time} seconds")
     print(f"encoded shape {encoded_data_np.shape} {encoded_data_np.dtype}")
 
     # Create an instance of the Numba transformer
-    transformer = PiecewiseLinearEncoderNumba(num_bins=NUM_BINS)
+    transformerv0 = PiecewiseLinearEncoderNumbaV0(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
-    transformer.fit(df_data)
+    transformerv0.fit(df_data)
 
     # Transform the data
     start_time = time.time()
-    encoded_data_numba = transformer.transform(df_data)
+    encoded_data_numbav0 = transformerv0.transform(df_data)
     end_time = time.time()
-    print(f"\nTransformNumba {df_data.shape} took {end_time - start_time} seconds")
-    print(f"encoded shape {encoded_data_numba.shape} {encoded_data_numba.dtype}")
+    print(f"\nTransformNumbaV0 {df_data.shape} took {end_time - start_time} seconds")
+    print(f"encoded shape {encoded_data_numbav0.shape} {encoded_data_numbav0.dtype}")
+
+    # Create an instance of the Numba transformer
+    transformerv1 = PiecewiseLinearEncoderNumbaV1(num_bins=NUM_BINS)
+
+    # Fit the transformer to the data
+    transformerv1.fit(df_data)
+
+    # Transform the data
+    start_time = time.time()
+    encoded_data_numbav1 = transformerv1.transform(df_data)
+    end_time = time.time()
+    print(f"\nTransformNumbaV1 {df_data.shape} took {end_time - start_time} seconds")
+    print(f"encoded shape {encoded_data_numbav1.shape} {encoded_data_numbav1.dtype}")
 
     # Create an instance of the Cython transformer
-    transformer = PiecewiseLinearEncoderCython(num_bins=NUM_BINS)
+    transformercy = PiecewiseLinearEncoderCython(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
-    transformer.fit(df_data)
+    transformercy.fit(df_data)
 
     # Transform the data
     start_time = time.time()
-    encoded_data_cython = transformer.transform(df_data)
+    encoded_data_cython = transformercy.transform(df_data)
     end_time = time.time()
     print(f"\nTransformCython {df_data.shape} took {end_time - start_time} seconds")
     print(f"encoded shape {encoded_data_cython.shape} {encoded_data_cython.dtype}")
 
-    print(f"\nnp.allclose(encoded_data_np, encoded_data_numba) {np.allclose(encoded_data_np, encoded_data_numba)}")
+    print(f"\nnp.allclose(encoded_data_np, encoded_data_numbav0) {np.allclose(encoded_data_np, encoded_data_numbav0)}")
+    print(f"\nnp.allclose(encoded_data_np, encoded_data_numbav1) {np.allclose(encoded_data_np, encoded_data_numbav1)}")
     print(f"np.allclose(encoded_data_np, encoded_data_cython) {np.allclose(encoded_data_np, encoded_data_cython)}")
 
     if not np.allclose(encoded_data_np, encoded_data_cython):
