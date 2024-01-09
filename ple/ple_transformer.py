@@ -106,7 +106,6 @@ class PiecewiseLinearEncoderNumpy(PiecewiseLinearEncoderBase):
             mask = mask > bin_indices.reshape(-1, 1)
             encoded_data[mask] = 0
 
-
             encode_data_list.append(encoded_data)
 
         # stach the encoded data encoded_data into a matrix that contains the piecewise linear encoding for each column
