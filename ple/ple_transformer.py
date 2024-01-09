@@ -302,7 +302,7 @@ if __name__ == "__main__":
 
 
     # Create an instance of the Numpy transformer
-    transformernp = PiecewiseLinearEncoderNP(num_bins=NUM_BINS)
+    transformernp = PiecewiseLinearEncoderNumpy(num_bins=NUM_BINS)
 
     # Fit the transformer to the data
     transformernp.fit(df_data)
