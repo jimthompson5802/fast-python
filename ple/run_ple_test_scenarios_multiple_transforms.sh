@@ -7,10 +7,10 @@ rm test_results_multiple.csv
 declare -a num_samples=("400000" )
 
 # array of transformer names
-declare -a transformers=("PiecewiseLinearEncoderNumpy" "PiecewiseLinearEncoderNumbaV0" "PiecewiseLinearEncoderCython")
+declare -a transformers=("PiecewiseLinearEncoderCython" "PiecewiseLinearEncoderNumbaV0" "PiecewiseLinearEncoderNumpy" )
 
 # loop trials
-for i in {1..1}
+for i in {1..5}
 do
     echo running trial $i
     # loop through the array of values
