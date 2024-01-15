@@ -18,16 +18,17 @@
         "terminal.integrated.shell.linux": "/bin/bash"
     },
     "extensions": [
-		"ms-python.python",
-		"ms-python.anaconda-extension-pack",
-		"donjayamanne.git-extension-pack",
-		"GitHub.copilot",
-		"GitHub.copilot-chat",
-		"VisualStudioExptTeam.vscodeintellicode",
-		"ms-toolsai.jupyter",
-		"ms-toolsai.vscode-jupyter-cell-tags",
-		"ms-python.vscode-pylance"
-	],
+        "ms-python.python",
+        "ms-python.anaconda-extension-pack",
+        "donjayamanne.git-extension-pack",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "VisualStudioExptTeam.vscodeintellicode",
+        "ms-toolsai.jupyter",
+        "ms-toolsai.vscode-jupyter-cell-tags",
+        "ms-python.vscode-pylance",
+        "ms-vscode.cpptools-extension-pack"
+    ],
     "forwardPorts": [],
     // "postCreateCommand": "pip install -r requirements.txt"
 }
